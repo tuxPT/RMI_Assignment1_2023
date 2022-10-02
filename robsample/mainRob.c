@@ -16,17 +16,19 @@
 #include "RobSock.h"
 
 #include "robfunc.h"
+#include "controller.h"
 
 #define true 1
 #define false 0
 
-typedef enum {NONE, BANG, BANG2, BANGH, P, PID} controller_t;
-
+/*
+* getXvel
+*
+* Computes current velocity along x axis.
+*
+* For internal use only.
+*/
 float getXvel(void);
-float controlAction(controller_t type, float setPoint, float feedback);
-float xLineSensor(float targetY);
-
-
 
 int main(int argc, char *argv[])
 {
@@ -39,7 +41,7 @@ int main(int argc, char *argv[])
   float xVel;
 
   float velSetPoint=0.1;
-
+  bool moving = false;
 
   printf( " Sample Robot\n Copyright (C) 2001-2019 Universidade de Aveiro\n" );
 
@@ -98,6 +100,7 @@ int main(int argc, char *argv[])
   /* Open a file for writing values */
   FILE *fd=fopen("output.txt","w+");
 
+
   /* Main cycle */
   while(1)
   {
@@ -124,38 +127,45 @@ int main(int argc, char *argv[])
       exit(0);
     }
 
-    /* Change speed according to X position */
-    if(((int)GetX())/4 % 2){
-      velSetPoint = 0.1;
+    /* Change velocity setpoint according to X position */
+    if(((int)GetX()/2) % 2){
+      velSetPoint = 0.05;
     }
     else{
       velSetPoint = 0.15;
     }
-    //velSetPoint = 0.1;
 
     /* Read current speed */
     xVel = getXvel();
 
     /* Compute control value */
-    lPow = rPow = controlAction(NONE, velSetPoint,xVel);
+    lPow = rPow = controller(NONE, velSetPoint, xVel);
 
     /* Act on the system */
     DriveMotors(lPow,rPow);
 
-    fprintf(fd,"%u\t",GetTime());
-    fprintf(fd,"%4.5f\t%4.5f\t",GetX(),GetY());
-    fprintf(fd,"%4.5f\t",velSetPoint);
-    fprintf(fd,"%4.5f\t",xVel);
-    fprintf(fd,"%4.5f\t",lPow);   /* lPow (or rPow) is equal to u */
+    /* Test if experiment has started */
+    if( GetStartButton()){
+      moving = true;
+    }
 
-    fprintf(fd,"\n");
+    /* If robot is moving, start printing values */
+    if(moving){
+      fprintf(fd,"%u\t",GetTime());
+      fprintf(fd,"%4.5f\t%4.5f\t",GetX(),GetY());
+      fprintf(fd,"%4.5f\t",velSetPoint);
+      fprintf(fd,"%4.5f\t",xVel);
+      fprintf(fd,"%4.5f\t",lPow);   /* lPow (or rPow) is equal to u */
 
-    printf("%u\t",GetTime());
-    printf("%4.5f\t%4.5f\t",GetX(),GetY());
-    printf("%4.5f\t",velSetPoint);
-    printf("%4.5f\t",lPow);
-    printf("%u\t",((int)GetX())/4 % 2 );
-    printf("\n");
+      fprintf(fd,"\n");
+
+      printf("%u\t",GetTime());
+      printf("%4.5f\t%4.5f\t",GetX(),GetY());
+      printf("%4.5f\t",velSetPoint);
+      printf("%4.5f\t",lPow);
+      printf("%u\t",((int)GetX())/4 % 2 );
+      printf("\n");
+    }
   }
 
   fclose(fd);
@@ -163,10 +173,10 @@ int main(int argc, char *argv[])
 }
 
 /**
- * float getXvel(void)
- *
- * Computes current velocity along X axis.
- */
+* float getXvel(void)
+*
+* Computes current velocity along X axis.
+*/
 float getXvel(void){
 
   float xVel;
@@ -191,111 +201,4 @@ float getXvel(void){
 
   return xVel;
 
-}
-
-/**
-* float controlAction(controller_t type, float setPoint, float feedback)
-*
-* Implements the control action, dependening on type.
-*
-* If type is set to NONE, no feedback is used. The setpoint is propagated
-* to the output (r=u)
-*/
-float controlAction(controller_t type, float setPoint, float feedback)
-{
-  float u=0;    /**> Control signal */
-  float e=0;    /**> Error signal */
-
-  const float max_u = 0.5;  // max_u - saturation value for control signal
-
-  // PID constants:
-  const float Kp = 1;       // Kp - proportional constant
-  // const float Ti = ;     // Ti - Integration time
-  //      set to FLT_MAX to disable I component
-  const float Ti = FLT_MAX;
-  const float Td = 0.0;     // Td - differential time
-  const float h = 0.050;    // h  - sampling interval
-  const float delta = 0.05;
-
-  // Auxiliary constants for the PID controller
-  static const float K0 = Kp*(1+h/Ti+Td/h);
-  static const float K1 = -Kp*(1+2*Td/h);
-  static const float K2 = Kp*Td/h;
-
-  // memory for error
-  static float e_m1 = 0;
-  static float e_m2 = 0;
-
-  // memory for the control signal
-  static float u_m1 = 0;
-
-  /* Compute error */
-  e = setPoint - feedback;
-
-  /* Implement control action depending on the type of control. */
-  switch (type) {
-    case NONE:
-      /* No feedback action */
-      u = setPoint;
-      break;
-    case BANG:
-      /* Bang-bang control */
-      if(e>0){
-        u = max_u;
-      }
-      else{
-        u = 0;
-      }
-      break;
-    case BANG2:
-      /* Bang-bang control with bipolar output */
-      if(e>0){
-        u = max_u;
-      }
-      else if (e<0){
-        u = -max_u;
-      }
-      else{
-        u = 0;
-      }
-      break;
-    case BANGH:
-      /* Bang-bang control with hysteresis */
-
-      if(e>delta){
-        u = max_u;
-      }
-      else if (e<-delta){
-        u = -max_u;
-      }
-      else{
-        u = u_m1;
-      }
-      u_m1 = u;
-      break;
-    case P:
-    /* Proportional control */
-      u = Kp*e;
-      break;
-    case PID:
-
-      /* Compute control signal */
-      u = u_m1 + K0*e + K1*e_m1 + K2*e_m2;
-
-      /* store values for next iterations */
-      e_m2 = e_m1;
-      e_m1 = e;
-      u_m1 = u;
-
-      // Clip the control signal to avoid saturation
-      if(u_m1>max_u){
-        u_m1 = max_u;
-      }
-      if (u_m1<-max_u){
-        u_m1 = -max_u;
-      }
-      break;
-  }
-
-  return u;
 }

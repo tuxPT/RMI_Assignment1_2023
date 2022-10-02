@@ -19,5 +19,5 @@ unix {
 }
 
 # Input
-HEADERS += robfunc.h
-SOURCES += mainRob.c robfunc.c
+HEADERS += robfunc.h controller.h
+SOURCES += mainRob.c robfunc.c controller.c
