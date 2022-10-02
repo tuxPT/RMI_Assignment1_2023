@@ -41,12 +41,14 @@ public:	// member functions
 	double outPower();
 	inline double lastOutPower() { return outpower; }
 	inline double inPower() { return inpower; }
+  inline void setControlOrder(int n) { controlOrder = n; return;};
 
 
 private:	// object data members
 	double inpower, outpower;
 	double prevpower;
   double a;         // TF time constant
+  int controlOrder;
 };
 
 #endif

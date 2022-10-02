@@ -8,7 +8,8 @@
 #include "controller.h"
 
 const float h = 0.050;    // h  - sampling interval
-const int a;
+
+const controller_t activeController=NONE;
 
 /*
 * Constants for the controller
@@ -16,17 +17,19 @@ const int a;
 
 // PID constants:
 // Kp is the same for P and PID controller
-const float Kp = 12;       // Kp - proportional constant
+const float Kp = 1;       // Kp - proportional constant
 // const float Ti = ;     // Ti - Integration time
 //      set to FLT_MAX to disable I component
 const float Ti = FLT_MAX;
-const float Td = 0;     // Td - differential time
+// const float Ti = 1/h;
+
+const float Td = 0*h;     // Td - differential time
 
 const float max_u = 10;  // max_u - saturation value for control signal
 
-/* histeresis for bang-bang controller */
+/* hysteresis for bang-bang controller */
 const float deltah=0.05;
-
+const float bangvalue = 0.2;
 
 float controller(controller_t type, float r, float y)
 {
@@ -47,7 +50,6 @@ float controller(controller_t type, float r, float y)
   // Compute error signal
   float e = r - y;
 
-
   /* Implement control action depending on the type of control. */
   switch (type) {
     case NONE:
@@ -58,7 +60,7 @@ float controller(controller_t type, float r, float y)
     case BANG:
       /* Bang-bang control, unidirectional */
       if(e>0){
-        u = max_u;
+        u = bangvalue;
       }
       else{
         u = 0;
@@ -67,10 +69,10 @@ float controller(controller_t type, float r, float y)
     case BANG2:
       /* Bang-bang control with bipolar output */
       if(e>0){
-        u = max_u;
+        u = bangvalue;
       }
       else if (e<0){
-        u = -max_u;
+        u = -bangvalue;
       }
       else{
         u = 0;
@@ -79,13 +81,15 @@ float controller(controller_t type, float r, float y)
     case BANGH:
       /* Bang-bang control with hysteresis */
 
-      if(e>deltah){
-        u = max_u;
+      /* deltah is the histeresis value */
+      if(e>0.5*deltah){
+        u = bangvalue;
       }
-      else if (e<-deltah){
-        u = -max_u;
+      else if (e<-0.5*deltah){
+        u = -bangvalue;
       }
       else{
+        /* If error within histeresis limits, keep the value */
         u = u_m1;
       }
       u_m1 = u;

@@ -10,6 +10,7 @@
 #include <float.h>
 
 
+
 /**
 * \typedef controller_t
 *
@@ -27,6 +28,8 @@ typedef enum {
   P,              /**< Proportional control */
   PID             /**< PID (Proportional-Integral-Derivative) control */
 } controller_t;
+
+extern const controller_t activeController;
 
 /**
 * float controller(controller_t type, float r, float y)

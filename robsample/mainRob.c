@@ -128,18 +128,18 @@ int main(int argc, char *argv[])
     }
 
     /* Change velocity setpoint according to X position */
-    if(((int)GetX()/2) % 2){
-      velSetPoint = 0.05;
+    if(((int)GetX()/8) % 2){
+      velSetPoint = 0.15;
     }
     else{
-      velSetPoint = 0.15;
+      velSetPoint = 0.05;
     }
 
     /* Read current speed */
     xVel = getXvel();
 
     /* Compute control value */
-    lPow = rPow = controller(NONE, velSetPoint, xVel);
+    lPow = rPow = controller(activeController, velSetPoint, xVel);
 
     /* Act on the system */
     DriveMotors(lPow,rPow);
@@ -162,8 +162,8 @@ int main(int argc, char *argv[])
       printf("%u\t",GetTime());
       printf("%4.5f\t%4.5f\t",GetX(),GetY());
       printf("%4.5f\t",velSetPoint);
+      printf("%4.5f\t",xVel);
       printf("%4.5f\t",lPow);
-      printf("%u\t",((int)GetX())/4 % 2 );
       printf("\n");
     }
   }

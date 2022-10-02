@@ -19,6 +19,6 @@ sleep 1
 killall Viewer
 killall simulator
 
-(cd robsample; octave --eval 'load("output.txt");figure;plot(output(:,1),output(:,4),";setPoint;",output(:,1),output(:,5),";vel;",output(:,1),output(:,6),";pow;");pause')
+(cd robsample; octave --eval 'load("output.txt");figure;plot(output(:,1),output(:,4),"-*;setPoint;",output(:,1),output(:,5),"-*;vel;",output(:,1),output(:,6),"-+;pow;");pause')
 
 echo Bye

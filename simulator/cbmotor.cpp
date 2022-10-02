@@ -1,31 +1,31 @@
 /*
-    This file is part of ciberRatoToolsSrc.
+This file is part of ciberRatoToolsSrc.
 
-    Copyright (C) 2001-2011 Universidade de Aveiro
+Copyright (C) 2001-2011 Universidade de Aveiro
 
-    ciberRatoToolsSrc is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
+ciberRatoToolsSrc is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
 
-    ciberRatoToolsSrc is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+ciberRatoToolsSrc is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with Foobar; if not, write to the Free Software
-    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+You should have received a copy of the GNU General Public License
+along with Foobar; if not, write to the Free Software
+Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
 /*! \file cbmotor.cpp
-	\brief Defini��o dos motores que actuam as rodas dos rob�s.
+\brief Defini��o dos motores que actuam as rodas dos rob�s.
 
-	Os motores s�o caracterizados por uma pot�ncia de entrada, uma pot�ncia
-	de sa�da e um coeficiente de ru�do.
-	Na vers�o actual as pot�ncias de entrada e sa�da s�o as mesmas.
-	Quer isto dizer que os motores conseguem comutar instantaneamente
-	de uma qualquer pot�ncia para outra.
+Os motores s�o caracterizados por uma pot�ncia de entrada, uma pot�ncia
+de sa�da e um coeficiente de ru�do.
+Na vers�o actual as pot�ncias de entrada e sa�da s�o as mesmas.
+Quer isto dizer que os motores conseguem comutar instantaneamente
+de uma qualquer pot�ncia para outra.
 */
 
 #include "cbutils.h"
@@ -39,41 +39,61 @@
 
 cbMotor::cbMotor(void)
 {
-   inpower=outpower=prevpower=0.0;
-   a=0.1;
+  inpower=outpower=prevpower=0.0;
+  a=0.05;
+  // Default value for system order
+  controlOrder=2;
 }
 
 void cbMotor::setInPower(double p)
 {
-	if (p > MAX_POWER) p = MAX_POWER;
-	else if (p < -MAX_POWER) p = -MAX_POWER;
-	inpower = p;
+  if (p > MAX_POWER) p = MAX_POWER;
+  else if (p < -MAX_POWER) p = -MAX_POWER;
+  inpower = p;
 }
 
 /*!
- * Determines and returns the power of the motor in each cycle.
- * Should be called only once per cycle!
- */
+* Determines and returns the power of the motor in each cycle.
+* Should be called only once per cycle!
+*/
 double cbMotor::outPower()
 {
   static unsigned int counter=0;
-	double noisepow = randNormal(100.0, noise) / 100.0;
+  double noisepow = randNormal(100.0, noise) / 100.0;
+
+  static float out1=0.0, out2=0.0;
 
   counter++;
 
 
-#if 0
+  #if 0
   // At time=100, change the time constant
   if(counter == 201){
     a = a/2;
   }
-#endif
+  #endif
 
-// PF: changed transfer function
-// outpower = (0.5*inpower + 0.5*prevpower) * noisepow;
+  // PF: changed transfer function
+  // outpower = (0.5*inpower + 0.5*prevpower) * noisepow;
 
-  outpower = (a*inpower + (1-a)*prevpower);
-	prevpower = outpower;
+  switch (controlOrder) {
+    case 1:
+    outpower = (a*inpower + (1-a)*prevpower);
+    prevpower = outpower;
+    break;
 
-	return outpower;
+    case 2:
+    outpower = 1.760000 * out1 - 0.777425 * out2 + 0.017425 * inpower;
+
+    /* Store for future iterations */
+    out2 = out1;
+    out1 = outpower;
+    break;
+
+    default:
+    printf("controlOrder not defined!\n");
+    exit(-1);
+  }
+
+  return outpower;
 }
