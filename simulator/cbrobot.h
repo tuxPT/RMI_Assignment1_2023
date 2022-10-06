@@ -144,10 +144,16 @@ public:
 	void updateScore();
 	void updateScoreCompetitive();
 	void updateScoreControl();
+	void updateScoreLineControl2022();
 
 	void updateState();
 	void updateStateCompetitive();
 	void updateStateControl();
+    void updateStateMapping();
+    void updateStatePlanning();
+    void updateStateLineControl2022();
+    void updateStateLineMapping2022();
+    void updateStateLinePlanning2022();
 
 	void updateSensors();
 
@@ -185,6 +191,7 @@ public:
 	static bool GPSOn;
 	static bool GPSDirOn;
 	static bool beaconSensorOn;
+	static bool compassSensorOn;
 	static bool scoreSensorOn;
 	static bool showActions;
     static bool showMeasures;
@@ -231,6 +238,7 @@ protected:  // class data members
 	vector<cbBeaconSensor *> beaconSensors;
 	cbIRSensor *irSensors[NUM_IR_SENSORS];
 	cbGPSSensor *GPSSensor;
+	cbLineSensor *lineSensor;
 
 	vector <cbSensor *> sensors;  // all robot sensors should have their pointer added to this vector
 

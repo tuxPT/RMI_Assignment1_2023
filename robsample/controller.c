@@ -23,7 +23,9 @@ const float Kp = 1;       // Kp - proportional constant
 const float Ti = FLT_MAX;
 // const float Ti = 1/h;
 
-const float Td = 0*h;     // Td - differential time
+//const float Td = 0*h;     // Td - differential time
+//float Td = 0*h;     // Td - differential time
+float Td = 0;     // Td - differential time
 
 const float max_u = 10;  // max_u - saturation value for control signal
 
@@ -36,9 +38,12 @@ float controller(controller_t type, float r, float y)
   float u=0;    /**> Control signal */
 
   // Auxiliary constants for the PID controller
-  static const float K0 = Kp*(1+h/Ti+Td/h);
-  static const float K1 = -Kp*(1+2*Td/h);
-  static const float K2 = Kp*Td/h;
+  //static const float K0 = Kp*(1+h/Ti+Td/h);
+  //static const float K1 = -Kp*(1+2*Td/h);
+  //static const float K2 = Kp*Td/h;
+  float K0 = Kp*(1+h/Ti+Td/h);
+  float K1 = -Kp*(1+2*Td/h);
+  float K2 = Kp*Td/h;
 
   // memory for error
   static float e_m1 = 0;

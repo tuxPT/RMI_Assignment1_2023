@@ -1,4 +1,4 @@
-/*
+/*<QGraphicsView>
     This file is part of ciberRatoToolsSrc.
 
     Copyright (C) 2001-2018 Universidade de Aveiro
@@ -52,6 +52,12 @@
 #include <QVector>
 #include <QMessageBox>
 #include <QMouseEvent>
+#include <QFileDialog>
+#include <QGraphicsView>
+#include <QGraphicsScene>
+#include <QGraphicsSimpleTextItem>
+#include <QGraphicsPolygonItem>
+#include <QGraphicsRectItem>
 
 using std::cerr;
 using std::cout;
@@ -67,18 +73,20 @@ static const char *LAB =
 	"<Lab Name=\"Default LAB\" Height=\"14\" Width=\"28\">\n"
 		"\t<Beacon X=\"25\" Y=\"7.0\" Height=\"4.0\"/>\n"
 		"\t<Target X=\"25\" Y=\"7.0\" Radius=\"1.0\"/>\n"
+//		"\t<Row  Pos=\"12\" Pattern=\"                 |                       \"  />\n"  
 		"\t<Row  Pos=\"12\" Pattern=\"  |        |     |                 |     \"  />\n"  
-		"\t<Row  Pos=\"11\" Pattern=\"  ·--·  ·--·--·  ·  ·--·--.--·--·  ·--·--\"  />\n"  
+		"\t<Row  Pos=\"11\" Pattern=\"  ï¿½--ï¿½  ï¿½--ï¿½--ï¿½  ï¿½  ï¿½--ï¿½--.--ï¿½--ï¿½  ï¿½--ï¿½--\"  />\n"  
 		"\t<Row  Pos=\"10\" Pattern=\"  |        |              |        |     \"  />\n"    
-		"\t<Row  Pos=\"9\"  Pattern=\"--·--·  ·--·  ·--·--·--·  ·--·--·  ·--·  \"  />\n"    
+		"\t<Row  Pos=\"9\"  Pattern=\"--ï¿½--ï¿½  ï¿½--ï¿½  ï¿½--ï¿½--ï¿½--ï¿½  ï¿½--ï¿½--ï¿½  ï¿½--ï¿½  \"  />\n"    
 		"\t<Row  Pos=\"8\"  Pattern=\"        |        |     |     |     |  |  \"  />\n"    
-		"\t<Row  Pos=\"7\"  Pattern=\"--·--·--·  ·--·  .--·--·--·  ·  ·  ·--·  \"  />\n"    
+		"\t<Row  Pos=\"7\"  Pattern=\"--ï¿½--ï¿½--ï¿½  ï¿½--ï¿½  .--ï¿½--ï¿½--ï¿½  ï¿½  ï¿½  ï¿½--ï¿½  \"  />\n"    
 		"\t<Row  Pos=\"6\"  Pattern=\"  |                                      \"  />\n"    
-		"\t<Row  Pos=\"5\"  Pattern=\"  ·--·--·--·--·--·--·  ·  ·--·  ·--·--·--\"  />\n"    
+		"\t<Row  Pos=\"5\"  Pattern=\"  ï¿½--ï¿½--ï¿½--ï¿½--ï¿½--ï¿½--ï¿½  ï¿½  ï¿½--ï¿½  ï¿½--ï¿½--ï¿½--\"  />\n"    
 		"\t<Row  Pos=\"4\"  Pattern=\"     |  |              |     |     |     \"  />\n"    
-		"\t<Row  Pos=\"3\"  Pattern=\"  ·--·  ·--·--·--·--·  ·--·  ·  ·--·  ·  \"  />\n"    
+//		"\t<Row  Pos=\"4\"  Pattern=\"        |              |     |     |     \"  />\n"    
+		"\t<Row  Pos=\"3\"  Pattern=\"  ï¿½--ï¿½  ï¿½--ï¿½--ï¿½--ï¿½--ï¿½  ï¿½--ï¿½  ï¿½  ï¿½--ï¿½  ï¿½  \"  />\n"    
 		"\t<Row  Pos=\"2\"  Pattern=\"  |                 |           |     |  \"  />\n"    
-		"\t<Row  Pos=\"1\"  Pattern=\"  ·--·  ·--·--·--·  ·--·--·  ·--·  ·--·  \"  />\n"    
+		"\t<Row  Pos=\"1\"  Pattern=\"  ï¿½--ï¿½  ï¿½--ï¿½--ï¿½--ï¿½  ï¿½--ï¿½--ï¿½  ï¿½--ï¿½  ï¿½--ï¿½  \"  />\n"    
 		"\t<Row  Pos=\"0\"  Pattern=\"  |  |           |           |     |     \"  />\n"    
 /*		"\t<Wall Height=\"5.0\">\n"
 			"\t\t<Corner X=\"10.0\" Y=\"6.0\"/>\n"
@@ -126,7 +134,7 @@ cbSimulator::cbSimulator()
 {
 	lab = 0;
 	curCycle = 0;
-    endCycle = 3000; // provisório
+    endCycle = 3000; // provisï¿½rio
 	cycle = 50;
 
 	curState = nextState = INIT;
@@ -364,6 +372,23 @@ void cbSimulator::setBeaconSensor(bool g)
 
 }
 
+void cbSimulator::setCompassSensor(bool g)
+{
+    if (g == param->compassSensorOn) return;
+
+    if (curState == INIT)
+    {
+        param->compassSensorOn = g;
+        cbRobot::compassSensorOn = g;
+    }
+    else
+        gui->appendMessage(QString("Cannot Change Configuration After Start - Use Reset"), true);
+
+
+    emit toggleCompassSensor(param->compassSensorOn);
+
+}
+
 bool cbSimulator::getGPS(void)
 {
 	return param->GPSOn;
@@ -372,6 +397,11 @@ bool cbSimulator::getGPS(void)
 bool cbSimulator::getBeaconSensor(void)
 {
 	return param->beaconSensorOn;
+}
+
+bool cbSimulator::getCompassSensor(void)
+{
+	return param->compassSensorOn;
 }
 
 void cbSimulator::setScoreSensor(bool g)
@@ -936,11 +966,18 @@ void cbSimulator::UpdateScores()
 		cbRobot *robot = robots[i];
         if (robot == 0) continue;
 
-        if(scoring==0)
-           robot->updateScoreCompetitive();   // COMPETITIVE
-        //robot->updateScore();                // COOPERATIVE
-        else 
-           robot->updateScoreControl();         // CONTROL
+        switch(scoring) {
+          case 1:
+            robot->updateScoreControl();         // CONTROL
+            break;
+          case 4:
+            robot->updateScoreLineControl2022(); // LINE CONTROL
+            break;
+          default:
+           robot->updateScoreCompetitive();      // COMPETITIVE
+           //robot->updateScore();               // COOPERATIVE
+           break;
+        }
 	}
 }
 
@@ -1025,13 +1062,32 @@ void cbSimulator::UpdateState()
 		cbRobot *robot = robots[i];
 		if (robot == 0) continue;
 
-        if(scoring==0) {
+        switch(scoring) {
+          case 1:
+            robot->updateStateControl();                  // CONTROL
+             break;
+          case 2:
+            robot->updateStateMapping();                  // MAPPING
+            break;
+          case 3:
+            robot->updateStatePlanning();                 // PLANNING
+            break;
+          case 4:
+            robot->updateStateLineControl2022();          // LINE CONTROL
+             break;
+          case 5:
+            robot->updateStateLineMapping2022();          // LINE MAPPING
+             break;
+          case 6:
+            robot->updateStateLinePlanning2022();         // LINE PLANNING
+             break;
+          default:
             robot->updateStateCompetitive();    // COMPETITIVE
+            //robot->updateState();               // COOPERATIVE
+            break;
         }
-        else 
-            robot->updateStateControl();          // CONTROL
+        
 	}
-        //robot->updateState();               // COOPERATIVE
 
 }
 
@@ -1067,8 +1123,8 @@ void cbSimulator::buildGraph(void)
 
 	assert(grid!=0);
 	assert(grid->count()>0);
-    for(g=0; g<grid->count();g++)
-        graph->addInitPoint(cbPosition(grid->at(g)).Coord());
+        for(g=0; g<grid->count();g++)
+            graph->addInitPoint(cbPosition(grid->at(g)).Coord());
 
 	//graph->writeGraph();
 
@@ -1129,11 +1185,13 @@ cbGraphView::cbGraphView(QGraphicsScene *scene, cbSimulator *sim) : QGraphicsVie
 {
 	simulator=sim;
 
-    distLabel = new QGraphicsSimpleTextItem(0, scene);
+    /* distLabel = new QGraphicsSimpleTextItem(0, scene); */
+    distLabel = new QGraphicsSimpleTextItem();
     distLabel->setText("AAAAA");
     distLabel->setZValue(10);
     distLabel->setPen(QPen(Qt::red));
-	distLabel->setVisible(true);
+    distLabel->setVisible(true);
+    scene->addItem(distLabel);
 }
 
 void cbGraphView::mouseMoveEvent(QMouseEvent *e)
@@ -1192,10 +1250,13 @@ void cbSimulator::showGraph(int id)
         for(c=0; c<corners.size();c++)
             pa->setPoint(c,(int)(corners[c].X()*labCanvasWidth/lab->Width()),
                          (int)(labCanvasHeight-corners[c].Y()*labCanvasHeight/lab->Height()) );
-        wallCanvas = new QGraphicsPolygonItem(0, labScene);
+
+        /* wallCanvas = new QGraphicsPolygonItem(0, labScene); */
+        wallCanvas = new QGraphicsPolygonItem();
         wallCanvas->setPolygon(*pa);
         wallCanvas->setBrush(QBrush(Qt::black));
-		wallCanvas->setVisible(true);
+	wallCanvas->setVisible(true);
+        labScene->addItem(wallCanvas);
 	}
 
 
@@ -1223,20 +1284,22 @@ void cbSimulator::showGraph(int id)
 	for(x = 0; x < GRIDSIZE; x++)
 	    for(y = 0; y < GRIDSIZE; y++) {
 
-            if(distGrid[x][y]<2000) {
-                grCanvas = new QGraphicsRectItem(x*labCanvasWidth/GRIDSIZE,y*labCanvasHeight/GRIDSIZE,
-                                                 (x+1)*labCanvasWidth/GRIDSIZE - x*labCanvasWidth/GRIDSIZE,
-                                                 (y+1)*labCanvasHeight/GRIDSIZE -y*labCanvasHeight/GRIDSIZE,
-                                                 0, labScene);
-                QColor color((int)(0+distGrid[x][y]/distMax*250),
-                             (int)(0+distGrid[x][y]/distMax*250),
-                             (int)(0+distGrid[x][y]/distMax*250));
-                grCanvas->setBrush(QBrush(color));
-                grCanvas->setPen(QPen(color));
-			    grCanvas->setVisible(true);
-			    //debug
-			    //distGrid[x][y]=(int)(0+distGrid[x][y]/distMax*250);
-		    }
+                if(distGrid[x][y]<2000) {
+                    grCanvas = new QGraphicsRectItem(x*labCanvasWidth/GRIDSIZE,y*labCanvasHeight/GRIDSIZE,
+                            (x+1)*labCanvasWidth/GRIDSIZE - x*labCanvasWidth/GRIDSIZE,
+                            (y+1)*labCanvasHeight/GRIDSIZE -y*labCanvasHeight/GRIDSIZE,
+                            0);
+                    QColor color((int)(0+distGrid[x][y]/distMax*250),
+                            (int)(0+distGrid[x][y]/distMax*250),
+                            (int)(0+distGrid[x][y]/distMax*250));
+                    grCanvas->setBrush(QBrush(color));
+                    grCanvas->setPen(QPen(color));
+                    grCanvas->setVisible(true);
+                    //debug
+                    //distGrid[x][y]=(int)(0+distGrid[x][y]/distMax*250);
+
+                    labScene->addItem(grCanvas);
+                }
 
         }
     labScene->update();
@@ -1456,7 +1519,8 @@ void cbSimulator::processEditParameters(void)
 	cbBeaconSensor::sensorAperture   = param->beaconAperture;
 
     cbRobot::GPSOn             = param->GPSOn;
-    cbRobot::beaconSensorOn             = param->beaconSensorOn;
+    cbRobot::beaconSensorOn    = param->beaconSensorOn;
+    cbRobot::compassSensorOn   = param->compassSensorOn;
 	cbRobot::scoreSensorOn     = param->scoreSensorOn;
 
     //Scores

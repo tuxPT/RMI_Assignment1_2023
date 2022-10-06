@@ -41,6 +41,8 @@
 #define RIGHT  2
 #define OTHER1 3
 
+#define N_LINE_ELEMENTS 7
+
 #define CELLROWS 7
 #define CELLCOLS 14
 
@@ -157,6 +159,18 @@ extern bool            IsBumperReady(void);
 
 /* active when robot collides */
 extern bool           GetBumperSensor(void);     
+
+extern bool           IsLineSensorReady(void);
+
+extern void           GetLineSensor(bool *);     
+
+
+/*! Indicates if score can be retrieved using score sensor 
+ */
+bool IsScoreReady(void);
+
+/* returns current score */
+int GetScoreSensor(void);
 
 /*! Indicates if a new GPS measure has arrived. 
  *  The value of GetX, GetY and GetDir is invalid when IsGPSReady returns false

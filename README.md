@@ -1,5 +1,5 @@
 
-# CiberRato Robot Simulation Environment <br/> Universidade de Aveiro / IEETA
+# CiberRato Robot Simulation Environment <br/> Universidade de Aveiro / IEETA 
 
 ## Information
 

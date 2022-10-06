@@ -71,6 +71,10 @@ public:
 	inline int    ground() { return measures.ground; }
 	inline bool   collisionReady() { return measures.collisionReady; }
     inline bool   collision() { return measures.collision; }
+	inline bool   lineSensorReady() { return measures.lineSensorReady; }
+    inline vector<bool>   lineSensor() { return measures.lineSensor; }
+	inline bool   scoreReady() { return measures.scoreReady; }
+    inline int    score() { return measures.score; }
     inline bool   gpsReady() { return measures.gpsReady; }
     inline bool   gpsDirReady() { return measures.gpsDirReady; }
 	inline bool   newMessage(int from) { return measures.hearMessage[from-1]!=QString(); }

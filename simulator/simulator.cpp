@@ -98,13 +98,14 @@ double  cbGPSSensor::offsetX   = randUniform(0.0, 1000.0);
 double  cbGPSSensor::offsetY   = randUniform(0.0, 1000.0);
 double  cbGPSSensor::offsetDeg = 0.0;  // a different value would not be consistent with XY reference frame nor with compass
 
-bool    cbRobot::GPSOn = false;
-bool    cbRobot::beaconSensorOn = false;
-bool    cbRobot::GPSDirOn = false;
-bool    cbRobot::scoreSensorOn = false;
-bool    cbRobot::showActions = true;
-bool    cbRobot::showMeasures = true;
-bool    cbRobot::ignoreOthers = false;
+bool    cbRobot::GPSOn           = false;
+bool    cbRobot::beaconSensorOn  = false;
+bool    cbRobot::compassSensorOn = true;
+bool    cbRobot::GPSDirOn        = false;
+bool    cbRobot::scoreSensorOn   = false;
+bool    cbRobot::showActions     = true;
+bool    cbRobot::showMeasures    = true;
+bool    cbRobot::ignoreOthers    = false;
 
 //Scores
 int     cbRobot::returnTimePenalty = 25;
@@ -123,6 +124,7 @@ bool    cbCompassSensor::sensorRequestable   = false;
 bool    cbGroundSensor::sensorRequestable    = false;
 bool    cbCollisionSensor::sensorRequestable = false;
 bool    cbGPSSensor::sensorRequestable       = false;
+bool    cbLineSensor::sensorRequestable       = false;
 
 //Latencies
 int     cbIRSensor::sensorLatency        =  0;
@@ -131,12 +133,13 @@ int     cbCompassSensor::sensorLatency   =  0;
 int     cbGroundSensor::sensorLatency    =  0;
 int     cbCollisionSensor::sensorLatency =  0;
 int     cbGPSSensor::sensorLatency       =  0;
+int     cbLineSensor::sensorLatency       =  0;
 
 double  cbBeaconSensor::sensorAperture    = M_PI;
 
 void CommandLineError()
 {
-    QMessageBox::critical(0,"Error", 
+    QMessageBox::critical(0,"Error",
 		    "SYNOPSIS: simulator [--lab file] [--grid file] [--log file] [--param file] [--port portnumber] [--showgraph id] [--gps] [--beacon]",
 		    QMessageBox::Ok, Qt::NoButton, Qt::NoButton);
     exit(1);
@@ -152,7 +155,7 @@ void CommandLineError()
 int main(int argc, char *argv[])
 {
 	/* Copyright and wellcome message */
-    printf(" CiberRato 2021 Simulator\n Copyright (C) 2001-2021 Universidade de Aveiro\n");
+    printf(" CiberRato 2022 Simulator\n Copyright (C) 2001-2022 Universidade de Aveiro\n");
     fflush(stdout);
 
 	/* extract option values */
@@ -170,7 +173,7 @@ int main(int argc, char *argv[])
     //cout << "Parse command line (First Pass) ..."
 
     int p=1;
-	while (p < argc) 
+	while (p < argc)
 	{
         if (strcmp(argv[p], "--lab") == 0) {
             if (p+1 < argc) {
@@ -215,6 +218,10 @@ int main(int argc, char *argv[])
             // wait until second pass of command line parsing
             p+=1;
 		}
+		else if (strcmp(argv[p], "--compass") == 0)	{
+            // wait until second pass of command line parsing
+            p+=1;
+		}
 		else if (strcmp(argv[p], "--showactions") == 0)	{
             // wait until second pass of command line parsing
             p+=1;
@@ -228,9 +235,7 @@ int main(int argc, char *argv[])
             else CommandLineError();
 	}
         else if (strcmp(argv[p], "--scoring") == 0)	{
-            fprintf(stderr,"AA\n");
             if (p+1 < argc) {
-               fprintf(stderr,"BB\n");
                 int scoring;
                 sscanf(argv[p+1], "%d", &scoring);
                 simulator.setScoring(scoring);
@@ -242,16 +247,16 @@ int main(int argc, char *argv[])
             CommandLineError();
 		}
 	}
-	
+
 	/* change parameteres object */
 	if (paramFilename) // a parameters file is given
 		simulator.changeParameters(paramFilename);
 
     //cout << "Parse command line (Second Pass) ..."
-	// The second pass of command line arguments overrides 
+	// The second pass of command line arguments overrides
     // parameters values that are defined in parameters file
     p=1;
-	while (p < argc) 
+	while (p < argc)
 	{
         if (strcmp(argv[p], "--lab") == 0) {
             if (p+1 < argc) {
@@ -298,6 +303,11 @@ int main(int argc, char *argv[])
             simulator.setBeaconSensor(true);
             p+=1;
 		}
+        else if (strcmp(argv[p], "--compass") == 0)	{
+            cbRobot::compassSensorOn = true;
+            simulator.setCompassSensor(true);
+            p+=1;
+		}
         else if (strcmp(argv[p], "--showactions") == 0)	{
             cbRobot::showActions=true;
             p+=1;
@@ -311,9 +321,7 @@ int main(int argc, char *argv[])
             else CommandLineError();
 		}
         else if (strcmp(argv[p], "--scoring") == 0)	{
-            fprintf(stderr,"AA\n");
             if (p+1 < argc) {
-               fprintf(stderr,"BB\n");
                 int scoring;
                 sscanf(argv[p+1], "%d", &scoring);
                 simulator.setScoring(scoring);
@@ -325,7 +333,7 @@ int main(int argc, char *argv[])
             CommandLineError();
 		}
 	}
-	
+
 	//cout << " done.\n";
 
 	/* change lab object */
@@ -345,8 +353,7 @@ int main(int argc, char *argv[])
     if(logFilename)
         simulator.setLogFilename(logFilename);
 
-	simulator.setReceptionistAt(port);
-
+    simulator.setReceptionistAt(port);
     simulator.buildGraph();
     //simulator.setDistMaxFromGridToTarget();
 

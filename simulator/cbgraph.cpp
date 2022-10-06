@@ -292,6 +292,8 @@ void cbGraph::buildCornerGraph(void)
     // angles with respect to the corner)
 
     for(wi = 0; wi < lab->nWalls(); wi++) {
+
+        if (lab->Wall(wi)->Height()<=0.0) continue;
         
         vector<cbPoint> &corneri = lab->Wall(wi)->Corners();
 
@@ -303,6 +305,8 @@ void cbGraph::buildCornerGraph(void)
 
            for(wf = 0; wf < lab->nWalls(); wf++) {
 
+            if (lab->Wall(wf)->Height()<=0.0) continue;
+            
                vector<cbPoint> &cornerf = lab->Wall(wf)->Corners();
 
                for(cf = 0; cf < cornerf.size(); cf++) {
@@ -468,6 +472,8 @@ void cbGraph::addInitPoint(cbPoint &p)
     // angles with respect to the corner)
     for(w = 0; w < lab->nWalls(); w++) {
 
+        if (lab->Wall(w)->Height()<=0.0) continue;
+
         vector<cbPoint> &corner = lab->Wall(w)->Corners();
 
         for(c = 0; c < corner.size(); c++) {
@@ -524,6 +530,8 @@ void cbGraph::addFinalPoint(unsigned int id, cbPoint &p)
     // The same corner may have several nodes (with diferrent
     // angles with respect to the corner)
     for(w = 0; w < lab->nWalls(); w++) {
+
+        if (lab->Wall(w)->Height()<=0.0) continue;
 
         vector<cbPoint> &corner = lab->Wall(w)->Corners();
 

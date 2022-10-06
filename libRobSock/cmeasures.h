@@ -26,6 +26,7 @@
 
 #define NUM_IR_SENSORS 4
 
+
 using std::vector;
 
 class CMeasures
@@ -41,6 +42,10 @@ public:
     double  IRSensor[NUM_IR_SENSORS]; 
     vector <bool>   beaconReady;
     vector <struct beaconMeasure> beacon; 
+
+    bool   lineSensorReady;
+    vector <bool>   lineSensor;
+
     unsigned int 	time;
 
     bool    groundReady;
