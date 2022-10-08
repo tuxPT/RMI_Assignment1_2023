@@ -1,5 +1,5 @@
 
-# CiberRato Robot Simulation Environment <br/> Universidade de Aveiro / IEETA 
+# CiberRato Robot Simulation Environment <br/> Universidade de Aveiro / IEETA
 
 ## Information
 
@@ -11,11 +11,11 @@ The MicroRato competition
 [http://microrato.ua.pt/], held annually at Aveiro University,
 uses these these tools for its Explorer league.
 
-### `speedc` branch
+### `linef` branch
 
-The `speedc` branch (this branch) is a demo of control systems based on the CiberRato tools, by hacking a collection of source files.
+The `linef` branch (this branch) is a demo of control systems based on the CiberRato tools, by hacking a collection of source files.
 
-The system simulates a mouse that travels along a straight with changing speed settings and using several controllers. The available controllers are defined by the `controller_t` type, define in `robsample/controller.h`:
+The system simulates a mouse that follows a line using several a controller. The types of available controllers are defined by the `controller_t` type, define in `robsample/controller.h`:
 
 ```C
 typedef enum {
@@ -49,7 +49,7 @@ In order to provide a more challenging problem for the control systems, the mous
 ```C
 controlOrder=1;
 ```
-`controlOrder` can take the value of 1 or 2, to select a 1st or 2nd order model for the motor. Note that the 1st order model used in `speedc` is different from the motor model used in the `main` branch.
+`controlOrder` can take the value of 1 or 2, to select a 1st or 2nd order model for the motor. Note that the 1st order model used in `linef` is different from the motor model used in the `main` branch.
 
 ## Contents
 
@@ -86,12 +86,12 @@ make
 
 To run the control systems demo, Viewer and C++ agent, execute (at the repository base dir):
 ```bash
-./startControl
+./startLinef
 ```
 
-The start control launches the C++ agent, that will travel a path along a horizontal line with changing velocity setpoints. When the STOP button is pressed, or when the robot hits the opposing labyrinth limit, the simulation is halted and a graph is displayed, plotting the set-point (reference) signal, the modified (acting) signal and the output (actual speed).
+The start control launches the C agent, that will travel a path following a straight line. When the STOP button is pressed the simulation is concluded and a graph is displayed, plotting the position over the line (which, in control terms, corresponds to the error signal) and the commands applied to the motors.
 
-The `startControl` script uses [Octave](https://www.octave.org) for creating the plots.  
+The `startLinef` script uses [Octave](https://www.octave.org) for creating the plots.  
 
 ## Authors
 
@@ -123,6 +123,6 @@ The `startControl` script uses [Octave](https://www.octave.org) for creating the
   University of Aveiro,
   efp@ua.pt
 
-* Pedro Fonseca (for the `speedc` branch),  University of Aveiro,  pf@ua.pt
+* Pedro Fonseca (for the `speedc` and `linef`branches),  University of Aveiro,  pf@ua.pt
 
  Copyright (C) 2001-2022 Universidade de Aveiro

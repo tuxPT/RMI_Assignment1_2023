@@ -21,14 +21,6 @@
 #define true 1
 #define false 0
 
-/*
-* getXvel
-*
-* Computes current velocity along x axis.
-*
-* For internal use only.
-*/
-float getXvel(void);
 
 int main(int argc, char *argv[])
 {
@@ -97,6 +89,7 @@ int main(int argc, char *argv[])
   }
   printf( "%s Connected\n", rob_name );
 
+
   /* Open a file for writing values */
   FILE *fd=fopen("output.txt","w+");
 
@@ -108,38 +101,50 @@ int main(int argc, char *argv[])
     /* Reading next values from Sensors */
     ReadSensors();
 
+    /*
+    * show LineSensor values
+    */
+    bool line[7];
+
+    GetLineSensor(line);
+
+    for (int i = 0; i < N_LINE_ELEMENTS; i++) {
+      fprintf(stderr, "%s", line[i] ? "1" : "0");
+    }
+    fprintf(stderr, "\n");
+
+    /*
+     * Compute estimate of robot position over the line.
+     * 1 unit = distance between sensors
+     */
+    float posOverLine=0;
+    int nActiveSensors=0;
+    for (int i = 0; i < N_LINE_ELEMENTS; i++) {
+      if(line[i]){
+        posOverLine += (float) (i-3);
+        nActiveSensors++;
+      }
+    }
+    posOverLine = posOverLine/nActiveSensors;
+    printf("%f\n",posOverLine);
+
+
     if(GetFinished()) /* Simulator has received Finish() or Robot Removed */
     {
       printf(  "%s Exiting\n", rob_name );
-      exit(0);
+      break;
     }
 
-    /* Test if reached end of labyrinth */
-    if(GetX() > 26.0){
-      printf("Reached end of maze! Terminating...\n");
-      fclose(fd);
-      exit(0);
-    }
-
-    if(GetStopButton() && (GetTime()>0) ){
-      fclose(fd);
+    if(GetStopButton() && GetTime()>0 ){
       printf("Stop button pressed! Terminating...\n");
-      exit(0);
+      break;
     }
-
-    /* Change velocity setpoint according to X position */
-    if(((int)GetX()/8) % 2){
-      velSetPoint = 0.15;
-    }
-    else{
-      velSetPoint = 0.05;
-    }
-
-    /* Read current speed */
-    xVel = getXvel();
 
     /* Compute control value */
-    lPow = rPow = controller(activeController, velSetPoint, xVel);
+    float baseVel = 0.15;
+
+    lPow = baseVel - controller(activeController,0,posOverLine);
+    rPow = baseVel + controller(activeController,0,posOverLine);
 
     /* Act on the system */
     DriveMotors(lPow,rPow);
@@ -149,56 +154,16 @@ int main(int argc, char *argv[])
       moving = true;
     }
 
-    /* If robot is moving, start printing values */
+    /* Print position over line */
     if(moving){
-      fprintf(fd,"%u\t",GetTime());
-      fprintf(fd,"%4.5f\t%4.5f\t",GetX(),GetY());
-      fprintf(fd,"%4.5f\t",velSetPoint);
-      fprintf(fd,"%4.5f\t",xVel);
-      fprintf(fd,"%4.5f\t",lPow);   /* lPow (or rPow) is equal to u */
-
-      fprintf(fd,"\n");
-
-      printf("%u\t",GetTime());
-      printf("%4.5f\t%4.5f\t",GetX(),GetY());
-      printf("%4.5f\t",velSetPoint);
-      printf("%4.5f\t",xVel);
-      printf("%4.5f\t",lPow);
-      printf("\n");
+      fprintf(fd, "%u\t",GetTime());
+      fprintf(fd, "%4.5f\t", posOverLine);
+      fprintf(fd, "%4.5f\t", lPow);
+      fprintf(fd, "%4.5f\n", rPow);
     }
+
   }
 
   fclose(fd);
   return 1;
-}
-
-/**
-* float getXvel(void)
-*
-* Computes current velocity along X axis.
-*/
-float getXvel(void){
-
-  float xVel;
-  float currentXpos;
-  static float lastXpos=0;
-  static int lastTime;
-  int currTime;
-
-  currentXpos = GetX();
-  currTime = GetTime();
-
-  if(currTime > lastTime){
-    xVel = (currentXpos - lastXpos)/(currTime - lastTime);
-  }
-  else{
-    xVel = 0;
-  }
-
-  /* Store for future memory... */
-  lastXpos = currentXpos;
-  lastTime = currTime;
-
-  return xVel;
-
 }

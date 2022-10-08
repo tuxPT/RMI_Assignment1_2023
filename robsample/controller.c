@@ -9,7 +9,7 @@
 
 const float h = 0.050;    // h  - sampling interval
 
-const controller_t activeController=NONE;
+const controller_t activeController=P;
 
 /*
 * Constants for the controller
@@ -17,15 +17,15 @@ const controller_t activeController=NONE;
 
 // PID constants:
 // Kp is the same for P and PID controller
-const float Kp = 1;       // Kp - proportional constant
+const float Kp = 0.1;       // Kp - proportional constant
 // const float Ti = ;     // Ti - Integration time
 //      set to FLT_MAX to disable I component
 const float Ti = FLT_MAX;
 // const float Ti = 1/h;
 
 //const float Td = 0*h;     // Td - differential time
-//float Td = 0*h;     // Td - differential time
-float Td = 0;     // Td - differential time
+float Td = 0*h;     // Td - differential time
+// float Td = h;     // Td - differential time
 
 const float max_u = 10;  // max_u - saturation value for control signal
 
