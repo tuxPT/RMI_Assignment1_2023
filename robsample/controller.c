@@ -17,7 +17,7 @@ const controller_t activeController=P;
 
 // PID constants:
 // Kp is the same for P and PID controller
-const float Kp = 0.1;       // Kp - proportional constant
+const float Kp = 1;       // Kp - proportional constant
 // const float Ti = ;     // Ti - Integration time
 //      set to FLT_MAX to disable I component
 const float Ti = FLT_MAX;

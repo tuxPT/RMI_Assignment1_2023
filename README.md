@@ -51,6 +51,8 @@ controlOrder=1;
 ```
 `controlOrder` can take the value of 1 or 2, to select a 1st or 2nd order model for the motor. Note that the 1st order model used in `linef` is different from the motor model used in the `main` branch.
 
+Note that, in this experiment, the robot may not start correctly positioned over the line and aligned in the proper direction. Check `linef-grid.xml` that defines the starting position and orientation. You can try to change these values to test the performance of a controller. 
+
 ## Contents
 
 * simulator -           The simulator source code

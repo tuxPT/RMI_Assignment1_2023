@@ -21,6 +21,7 @@
 #define true 1
 #define false 0
 
+float getLinePos(bool line[]);
 
 int main(int argc, char *argv[])
 {
@@ -30,12 +31,12 @@ int main(int argc, char *argv[])
   int rob_id = 1;
   char lmap[CELLROWS*2-1][CELLCOLS*2-1]; // in this map the center of cell (i,j), (i in 0..6, j in 0..13) is mapped to lmap[i*2][j*2].
   // to know if there is a wall on top of cell(i,j) (i in 0..5), check if the value of lmap[i*2+1][j*2] is space or not
-  float xVel;
 
-  float velSetPoint=0.1;
+  float posOverLine;                    /* Position over the line */
+  float velSetPoint=0.1;                /* Velocity set point */
   bool moving = false;
 
-  printf( " Sample Robot\n Copyright (C) 2001-2019 Universidade de Aveiro\n" );
+  printf( " Sample Robot\n Copyright (C) 2001-2022 Universidade de Aveiro\n" );
 
   /* processing arguments */
   while (argc > 2) /* every option has a value, thus argc must be 1, 3, 5, ... */
@@ -101,9 +102,6 @@ int main(int argc, char *argv[])
     /* Reading next values from Sensors */
     ReadSensors();
 
-    /*
-    * show LineSensor values
-    */
     bool line[7];
 
     GetLineSensor(line);
@@ -113,38 +111,31 @@ int main(int argc, char *argv[])
     }
     fprintf(stderr, "\n");
 
-    /*
-     * Compute estimate of robot position over the line.
-     * 1 unit = distance between sensors
-     */
-    float posOverLine=0;
-    int nActiveSensors=0;
-    for (int i = 0; i < N_LINE_ELEMENTS; i++) {
-      if(line[i]){
-        posOverLine += (float) (i-3);
-        nActiveSensors++;
-      }
-    }
-    posOverLine = posOverLine/nActiveSensors;
-    printf("%f\n",posOverLine);
-
-
     if(GetFinished()) /* Simulator has received Finish() or Robot Removed */
     {
       printf(  "%s Exiting\n", rob_name );
       break;
     }
 
+    /* Test if reached end of labyrinth */
+    if(GetX() > 27.0){
+      printf("Reached end of maze! Terminating...\n");
+      break;
+    }
+
+
     if(GetStopButton() && GetTime()>0 ){
       printf("Stop button pressed! Terminating...\n");
       break;
     }
 
-    /* Compute control value */
-    float baseVel = 0.15;
+    /* Compute position over the line */
+    posOverLine = getLinePos(line);
 
-    lPow = baseVel - controller(activeController,0,posOverLine);
-    rPow = baseVel + controller(activeController,0,posOverLine);
+    /* Compute left and right command for steering the robot, using the
+       active controller */
+    lPow = velSetPoint - controller(activeController,0,posOverLine);
+    rPow = velSetPoint + controller(activeController,0,posOverLine);
 
     /* Act on the system */
     DriveMotors(lPow,rPow);
@@ -154,10 +145,15 @@ int main(int argc, char *argv[])
       moving = true;
     }
 
-    /* Print position over line */
+    /* Store values in history file */
     if(moving){
+      /* Current time*/
       fprintf(fd, "%u\t",GetTime());
+      /* Actual position error = Current Y Position - Line Position */
+      fprintf(fd, "%4.5f\t", GetY() - 10);
+      /* Sensor readings */
       fprintf(fd, "%4.5f\t", posOverLine);
+      /* Motor commands */
       fprintf(fd, "%4.5f\t", lPow);
       fprintf(fd, "%4.5f\n", rPow);
     }
@@ -166,4 +162,40 @@ int main(int argc, char *argv[])
 
   fclose(fd);
   return 1;
+}
+
+/**
+ * Compute estimate of robot position over the line.
+ *
+ * Computes the posiition of the line relative to the line sensor. The line
+ * sensor contains 7 detectors, line[0] to line[6], being line[3] the central
+ * detector.
+ * The result is scaled for the robot dimensions, using the value defined in
+ * LINESENSORELDIST in cbsensor.h. Current value is 0.08
+ *
+ * If no line is detected under the sensor, returns NaN (result is 0/0)
+ *
+ * \param line   array (size N_LINE_ELEMENTS) containing the line sensor readings
+ * \returns Position of the line relative to the center of the sensor.
+ *
+ */
+float getLinePos(bool line[])
+{
+  float posOverLine=0;
+  int nActiveSensors=0;
+
+  /* Read sensors */
+  for (int i = 0; i < N_LINE_ELEMENTS; i++) {
+    if(line[i]){
+      posOverLine += (float) (i-3);
+      nActiveSensors++;
+    }
+  }
+  /* Compute the position and scale the measure for the distance between
+   * sensors.
+   */
+  posOverLine = 0.08*posOverLine/nActiveSensors;
+
+  return posOverLine;
+
 }
