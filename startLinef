@@ -1,0 +1,25 @@
+#!/bin/bash
+
+ARGS="--param ../Labs/linef/linef-config.xml"
+ARGS+=" --lab ../Labs/linef/linef-lab.xml"
+ARGS+=" --grid ../Labs/linef/linef-grid.xml"
+ARGS+=" --gps"
+#ARGS+=" --scoring 4"
+
+(cd simulator; ./simulator $ARGS) &
+
+sleep 1
+
+(cd Viewer; ./Viewer --autoconnect) &
+
+sleep 1
+
+(cd robsample; ./robsample )
+
+killall Viewer
+killall simulator
+
+# (cd robsample; octave --eval 'load("output.txt");figure;plot(output(:,1),output(:,2),"-;pos Error;",output(:,1),output(:,3),"-;posOverLine;",output(:,1),output(:,4),"-;lPow;",output(:,1),output(:,5),"-;rPow;");pause')
+(cd robsample; octave --eval 'load("output.txt");figure;plot(output(:,1),output(:,2),"-;pos Error;",output(:,1),output(:,3));pause')
+
+echo Bye

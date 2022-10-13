@@ -3,6 +3,7 @@ set(robsample_SRC
     #Source
     mainRob.c
     robfunc.c
+    controller.c
 )
 
 add_executable(robsample ${robsample_SRC})
