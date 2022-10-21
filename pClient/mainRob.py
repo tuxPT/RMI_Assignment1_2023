@@ -13,8 +13,14 @@ class MyRob(CRobLinkAngs):
         CRobLinkAngs.__init__(self, rob_name, rob_id, angles, host)
         self.challenge = challenge
         self.outfile = outfile
+
         if self.challenge == "1":
             self.track = []
+
+        self.ACTIONS = {'STAY', 'LEFT', 'TOP', 'RIGHT', 'BOTTOM'}
+        self.state = "GO"
+        self.previous_angle = 0
+
         if self.challenge == "2":
             self.map = [[" " for j in range(1,50)] for i in range(1,22)]
             #print(len(self.map)*len(self.map[0]))
@@ -42,7 +48,10 @@ class MyRob(CRobLinkAngs):
         stopped_state = 'run'
 
         self.readSensors()
+        self.angle = self.measures.compass
         self.diffpos = [24 - self.measures.x, 10 - self.measures.y]
+
+        
 
         while True:
             self.readSensors()
@@ -78,6 +87,21 @@ class MyRob(CRobLinkAngs):
                     self.setReturningLed(False)
                 self.wander()
             
+
+    def potential_paths(self, x, y):
+        xn, yn = x+2, y
+        if self.map[yn][xn] not in ['-', '|', '?']:
+            self.map[yn][xn] = 'U'
+        xn, yn = x-2, y
+        if self.map[yn][xn] not in ['-', '|', '?']:
+            self.map[yn][xn] = 'U'
+        xn, yn = x, y+1
+        if self.map[yn][xn] not in ['-', '|', '?']:
+            self.map[yn][xn] = 'U'
+        xn, yn = x, y-1
+        if self.map[yn][xn] not in ['-', '|', '?']:
+            self.map[yn][xn] = 'U'
+
 
     def wander(self):
         """ center_id = 0
@@ -145,6 +169,8 @@ class MyRob(CRobLinkAngs):
 
         x = round(x)
         y = round(y)
+
+       
         
         # height correction
         #y = 20 - round(y)
@@ -156,66 +182,99 @@ class MyRob(CRobLinkAngs):
         # every odd line
         if y % 2 == 1:
             self.map[y][x] = "|"
+            self.potential_paths(x, y)
         # every odd column and even line
         elif x % 2 == 1:
             self.map[y][x] = "-"
+            self.potential_paths(x, y)
         else:
             pass
 
+        if self.measures.lineSensor.count('1') == 7:
+            xn, yn, has_neighbor = self.unknown_pos(x, y, 'left')
+            self.save_unknown(xn, yn, has_neighbor)
+            xn, yn, has_neighbor = self.unknown_pos(x, y, 'right')
+            self.save_unknown(xn, yn, has_neighbor)
 
 
+        if self.measures.lineSensor[0] == '1':
+            if self.measures.lineSensor.count('1') > 3:
+                xn, yn, has_neighbor = self.unknown_pos(x, y, 'left')
+                self.save_unknown(xn, yn, has_neighbor)
+                ux, uy, *_ = self.unknown_pos(x, y, 'right')
+                if  self.map[uy][ux] == 'U':
+                    self.map[uy][ux] = ''
 
-        # if the agent makes a complete lap
-        if (({x,y} == {10,23}) or ({x,y} ==  {9,24})):
-
-            # go for unexplored paths
-            #self.driveMotors(0,0)
-            
-            path = self.find_next(x, y)
-
-            print(f'{"First unexplored path: "}{path}')
-
+            #print('Rotate left')
+            #self.driveMotors(-0.12,0.15)
+        elif self.measures.lineSensor[6] == '1':
+            if self.measures.lineSensor.count('1') > 3:
+                xn, yn, has_neighbor = self.unknown_pos(x, y, 'right')
+                self.save_unknown(xn, yn, has_neighbor)
+                ux, uy, *_ = self.unknown_pos(x, y, 'left')
+                if  self.map[uy][ux] == 'U':
+                    self.map[uy][ux] = ''
+        
         else:
-            # if there is a path both to the right and to the left
-            if self.measures.lineSensor.count('1') == 7:
-                self.unknown_pos(x, y, 'left')
-                self.unknown_pos(x, y, 'right')
-
-            # if there is a path to the left
-            if self.measures.lineSensor[0] == '1':
-                if self.measures.lineSensor.count('1') > 3:
-                    self.unknown_pos(x, y, 'left')
-
-                print('Rotate left')
-                self.driveMotors(-0.12,0.15)
-            
-            # if there is a path to the left
-            elif self.measures.lineSensor[6] == '1':
-                if self.measures.lineSensor.count('1') > 3:
-                    self.unknown_pos(x, y, 'right')
-                
-                print('Rotate right')
-                self.driveMotors(0.15,-0.12)
-
-            # if the agent is swinging left   
-            elif self.measures.lineSensor[1] == '1':
-                print('Adjust left')
+            ux, uy, *_ = self.unknown_pos(x, y, 'left')
+            if  self.map[uy][ux] == 'U':
+                self.map[uy][ux] = ''
+            ux, uy, *_ = self.unknown_pos(x, y, 'right')
+            if  self.map[uy][ux] == 'U':
+                self.map[uy][ux] = ''
+        
+        if self.state == "STOP":
+            self.driveMotors(0, 0)
+            print('STOP')
+            xn, yn, has_neighbor =self.unknown_pos(x, y, 'left')
+            if self.map[yn][xn] == "?":
+                self.state = "R_LEFT"
+                self.angle = (self.measures.compass - 90) % 360
+                if self.angle > 180:
+                    self.angle -= 180
+                print('angle : ' + str(self.angle))
+                return
+            xn, yn, has_neighbor = self.unknown_pos(x, y, 'right')
+            if self.map[yn][xn] == "?":
+                self.state = "R_RIGHT"
+                self.angle = (self.measures.compass + 90) % 360
+                if self.angle > 180:
+                    self.angle -= 180
+                print('angle : ' + str(self.angle))
+                return
+        elif self.state == "GO":
+            if self.measures.lineSensor[1] == '1':
+                print('GO')
                 self.driveMotors(0.08,0.15)
-
-            # if the agent is swinging right   
             elif self.measures.lineSensor[5] == '1':
-                print('Adjust right')
+                
+                print('GO')
                 self.driveMotors(0.15,0.08)
-
-            # if there is a path forward
             elif '1' in self.measures.lineSensor[2:5]:
-                print('Forward')
+                print('GO')
                 self.driveMotors(0.15, 0.15)
-            
-            # if it is a dead end
-            elif self.measures.lineSensor.count('0') == 7:
-                self.driveMotors(0,0)
-                self.driveMotors(0.15,-0.15)
+            else:
+                self.state = "STOP"
+        elif self.state == "R_RIGHT":
+            print('R_RIGHT')
+            if abs(self.measures.compass - self.angle) <= 1:
+                self.state = "GO"
+            if abs(self.measures.compass - self.angle) > abs(self.measures.compass - self.angle):
+                self.state = "R_LEFT"
+            else:
+                self.driveMotors(0.15, -0.12)
+        elif self.state == "R_LEFT":
+            print('R_LEFT')
+            if abs(self.measures.compass - self.angle) <= 1:
+                self.state = "GO"
+            if abs(self.measures.compass - self.angle) > abs(self.measures.compass - self.angle):
+                self.state = "R_RIGHT"
+            else:
+                self.driveMotors(-0.12, 0.15)
+        elif self.state == "BACK":
+            self.driveMotors(-0.15, -0.15)
+        else:
+            pass
 
         self.save_map()
         
@@ -256,7 +315,57 @@ class MyRob(CRobLinkAngs):
         x+= calc[0]
         y+= calc[1]
 
-        if self.map[y][x] not in ['-', '|', 'I'] and calc != [0, 0]:
+        return [x, y, calc != [0, 0]]
+
+    # menor distância entre dois pontos
+    def distance(self, head, pos):
+        dx = abs(head.x - pos.x)
+        dy = abs(head.y - pos.y)
+        return dx + dy
+
+    # devolve uma lifo sendo que o ultimo é na verdade a proxima posicao
+    def find_path(self, cameFrom, end, start):
+        current = end
+        deque = [current]
+        while cameFrom[current] != start:
+            current = cameFrom[current]
+            deque.append(current)
+
+        return deque
+
+    # Search A_Star com dicionários
+    def search(self, start, goal, bodies):
+        closedset = set() # coordenadas visitadas
+        openset = [start] # coordenadas por visitar
+        cameFrom = {} # dicionario/mapa, dada uma posicao retorna a posicao anterior
+        Gdict = collections.defaultdict(lambda: math.inf) # dicionario/mapa, dada uma posicao retorna o custo acumulado
+        Gdict[start] = 0
+        t0 = time.process_time()
+        t1 = time.process_time()
+        while t1 - t0 < 3 and openset != []:
+            current = openset[0]
+            if current == goal and current != start:
+                return self.find_path(cameFrom, current, start)
+
+            openset.remove(current)
+            closedset.add(current)
+            neighbors = list(self.valid_actions(current, bodies, closedset).keys())
+            neighbors.sort(key=lambda x: self.distance(x, goal))
+
+            for pos in neighbors:
+                gscore = Gdict[current] + self.distance(current,pos)
+
+                if gscore < Gdict[pos]:
+                    cameFrom[pos] = current
+                    Gdict[pos] = gscore
+
+            openset += [pos for pos in neighbors if pos not in openset]
+            t1 = time.process_time()
+        return []
+
+
+    def save_unknown(self, x, y, has_neighbor):
+        if self.map[y][x] not in ['-', '|', 'I'] and has_neighbor:
             if y % 2 == 1 and x % 2 == 0:
                 self.map[y][x] = "?"
             elif x % 2 == 1 and y % 2 == 0:
@@ -269,7 +378,6 @@ class MyRob(CRobLinkAngs):
                 s += str(val)
             s += "\n"
 
-        print(s)
         with open(outfile, "w+") as f:
             f.truncate(0)
             f.write(s)
